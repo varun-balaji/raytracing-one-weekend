@@ -20,6 +20,7 @@ public:
                 << std::flush;
       for (int i = 0; i < image_width; i++) {
         color pixel_color(0, 0, 0);
+        // anti-aliasing sampling here.
         for (int sample = 0; sample < samples_per_pixel; sample++) {
           ray r = get_ray(i, j);
           pixel_color += ray_color(r, world);
@@ -102,7 +103,8 @@ private:
   }
 
   vec3 sample_square() const {
-    // Return a random vector in the [-0.5, -0.5] - [0.5, 0.5] unit square.
+    // Return a random vector in the [-0.5, -0.5] - [0.5, 0.5] unit square for
+    // anti-aliasing.
     return vec3(random_double() - 0.5, random_double() - 0.5, 0);
   }
 };
