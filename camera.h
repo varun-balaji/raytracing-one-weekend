@@ -9,6 +9,7 @@ public:
   double aspect_ratio = 1.0;
   int image_width = 100;
   int samples_per_pixel = 10;
+  int max_depth = 10;
 
   void render(const hittable &world) {
     initialize();
@@ -23,7 +24,7 @@ public:
         // anti-aliasing sampling here.
         for (int sample = 0; sample < samples_per_pixel; sample++) {
           ray r = get_ray(i, j);
-          pixel_color += ray_color(r, world);
+          pixel_color += ray_color(r, max_depth, world);
         }
         write_color(std::cout, pixel_color * pixel_samples_scale);
       }
@@ -77,11 +78,17 @@ private:
     pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_x + pixel_delta_y);
   }
 
-  color ray_color(const ray &r, const hittable &world) const {
+  color ray_color(const ray &r, int depth, const hittable &world) const {
+    if (depth <= 0)
+      return color(0, 0, 0);
+
     hit_record rec;
-    if (world.hit(r, interval(0, infinity), rec)) {
-      // Add color(1, 1, 1) since min of rec.normal can be (-1, -1, -1)
-      return 0.5 * (rec.normal + color(1, 1, 1));
+    // Ignore rays which hit very close to the point due to floating point
+    // approximations.
+    if (world.hit(r, interval(0.001, infinity), rec)) {
+      // Calculate diffused ray reflection.
+      vec3 direction = random_on_hemisphere(rec.normal);
+      return 0.5 * ray_color(ray(rec.p, direction), depth - 1, world);
     }
 
     // Skybox background
