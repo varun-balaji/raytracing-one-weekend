@@ -1,10 +1,13 @@
 #ifndef HITTABLE_H
 #define HITTABLE_H
 
+class material;
+
 class hit_record {
 public:
   point3 p;    // Point where ray hits hittable object.
   vec3 normal; // Surface normal from p.
+  shared_ptr<material> mat;
   double t; // Value of t in equation of incident ray: P(t) = A + t*B where A is
             // ray origin and B is ray direction.
   bool front_face; // Used to determine whether the incident ray is hitting the
