@@ -86,8 +86,10 @@ private:
     // Ignore rays which hit very close to the point due to floating point
     // approximations.
     if (world.hit(r, interval(0.001, infinity), rec)) {
-      // Calculate diffused ray reflection.
-      vec3 direction = random_on_hemisphere(rec.normal);
+      // Calculate diffused ray reflection with Lambertian diffusion.
+      vec3 direction = rec.normal + random_unit_vector();
+      // Uniform diffusion, physically incorrect, need to test on a larger
+      // scene. vec3 direction = random_on_hemisphere(rec.normal);
       return 0.5 * ray_color(ray(rec.p, direction), depth - 1, world);
     }
 
