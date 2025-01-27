@@ -2,6 +2,7 @@
 #define CAMERA_H
 
 #include "hittable.h"
+#include "material.h"
 
 class camera {
 public:
@@ -86,11 +87,13 @@ private:
     // Ignore rays which hit very close to the point due to floating point
     // approximations.
     if (world.hit(r, interval(0.001, infinity), rec)) {
-      // Calculate diffused ray reflection with Lambertian diffusion.
-      vec3 direction = rec.normal + random_unit_vector();
-      // Uniform diffusion, physically incorrect, need to test on a larger
-      // scene. vec3 direction = random_on_hemisphere(rec.normal);
-      return 0.5 * ray_color(ray(rec.p, direction), depth - 1, world);
+      ray scattered;
+      color attenuation;
+
+      if (rec.mat->scatter(r, rec, attenuation, scattered)) {
+        return attenuation * ray_color(scattered, depth - 1, world);
+      }
+      return color(0, 0, 0);
     }
 
     // Skybox background
