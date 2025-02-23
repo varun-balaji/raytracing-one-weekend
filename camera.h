@@ -3,6 +3,7 @@
 
 #include "hittable.h"
 #include "material.h"
+#include "vec3.h"
 
 class camera {
 public:
@@ -11,6 +12,14 @@ public:
   int image_width = 100;
   int samples_per_pixel = 10;
   int max_depth = 10;
+
+  // Adjustable fov
+  double vfov = 90;
+
+  // Adjustable camera position and orientation
+  point3 lookfrom = point3(0, 0, 0);
+  point3 lookat = point3(0, 0, -1);
+  vec3 vup = vec3(0, 1, 0);
 
   void render(const hittable &world) {
     initialize();
@@ -35,12 +44,13 @@ public:
   }
 
 private:
-  int image_height;
+  int image_height; // Rendered image height in pixels
   double pixel_samples_scale;
   point3 camera_center;
   point3 pixel00_loc;
   vec3 pixel_delta_x;
   vec3 pixel_delta_y;
+  vec3 u, v, w; // Camera frame basis vectors
 
   void initialize() {
     // Image
@@ -51,19 +61,25 @@ private:
     pixel_samples_scale = 1.0 / samples_per_pixel;
 
     // Camera
-    camera_center = point3(0, 0, 0); // Camera at origin
-    auto focal_length = 1.0;         // Distance from viewport to camera
-    auto viewport_height = 2.0;
+    camera_center = lookfrom;
+    auto focal_length = (lookfrom - lookat).length();
+    auto theta = degrees_to_radians(vfov);
+    auto h = std::tan(theta / 2);
+    auto viewport_height = 2 * h * focal_length;
     auto viewport_width =
         viewport_height * (double(image_width) / image_height);
 
     // Viewport dimensions are mapped to the image dimensions. This is where the
     // scalar mapping of pixels to 3D coordinate unit dimensions happens.
 
+    // Camera basis vectors
+    w = unit_vector(lookfrom - lookat);
+    u = unit_vector(cross(vup, w));
+    v = cross(w, u);
     // Viewport edge vectors
-    auto viewport_x = vec3(viewport_width, 0, 0);
+    auto viewport_x = viewport_width * u;
     // - sign since Y-axis pixel coords are reverse in 3D coords
-    auto viewport_y = vec3(0, -viewport_height, 0);
+    auto viewport_y = viewport_height * -v;
 
     // Pixel delta along viewport axes. We'll use these to calculate the 3D
     // point where the ray originating from the camera passes through.
@@ -71,8 +87,8 @@ private:
     pixel_delta_y = viewport_y / image_height;
 
     // Calculate 3D coords of upper left pixel.
-    auto viewport_upper_left = camera_center - vec3(0, 0, focal_length) -
-                               viewport_x / 2 - viewport_y / 2;
+    auto viewport_upper_left =
+        camera_center - (w * focal_length) - viewport_x / 2 - viewport_y / 2;
     // Offset the pixel00 center by 0.5 of pixel_delta from viewport_upper_left
     // so that each pixel is at the center of each grid square (which has
     // dimensions pixel_delta_x by pixel_delta_y)
